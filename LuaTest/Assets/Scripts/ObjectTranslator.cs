@@ -8,29 +8,47 @@ public class ObjectTranslator
 
     public static readonly ObjectTranslator Instance = new ObjectTranslator();
 
-    List<UnityEngine.Object> objectPool = new List<UnityEngine.Object>();
+    List<object> objectPool = new List<object>();
+    Dictionary<object, int> refCount = new Dictionary<object, int>();
 
-    public int PushObj(UnityEngine.Object obj)
+    public int PushObj(object obj)
     {
         int idx = objectPool.IndexOf(obj);
         if (idx >= 0)
         {
+            refCount[obj]++;
             return idx;
         }
         objectPool.Add(obj);
+        refCount[obj] = 1;
         return objectPool.Count - 1;
     }
 
-    public T Get<T>(int index) where T : UnityEngine.Object
+    public T Get<T>(int index)
     {
         try
         {
-            return objectPool[index] as T;
+            return (T)objectPool[index];
         }
         catch (Exception e)
         {
-            Debug.Log(e.ToString());
-            return null;
+            Debug.LogError(e.ToString());
+            return default(T);
+        }
+    }
+
+    public void PopObj(int index)
+    {
+        if (index < 0 || index >= objectPool.Count)
+        {
+            Debug.LogError("Pop Obj Error");
+        }
+        object obj = objectPool[index];
+        refCount[obj]--;
+        if (refCount[obj] == 0)
+        {
+            refCount.Remove(obj);
+            objectPool.RemoveAt(index);
         }
     }
 }

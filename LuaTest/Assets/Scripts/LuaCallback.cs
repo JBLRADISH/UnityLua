@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using AOT;
 using UnityEngine;
 
-public static class LuaCallback
+ public static class LuaCallback
 {
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -21,7 +21,7 @@ public static class LuaCallback
         {
             if (LuaAPI.IsString(L, i))
             {
-                s += LuaAPI.ToStr(L, i);
+                s += ToString(L, i);
                 if (i != nargs)
                 {
                     s += "\t";
@@ -33,72 +33,12 @@ public static class LuaCallback
     }
 
     [MonoPInvokeCallback(typeof(LuaCFunction))]
-    public static int OpenUrl(IntPtr L)
-    {
-        if (CheckArgsCount(L, 1))
-        {
-            if (LuaAPI.IsString(L, 1))
-            {
-                string arg0 = LuaAPI.ToStr(L, 1);
-                UnityEngine.Application.OpenURL(arg0);
-            }
-        }
-        return 0;
-    }
-
-    [MonoPInvokeCallback(typeof(LuaCFunction))]
-    public static int get_timeScale(IntPtr L)
-    {
-        Debug.Log(Time.timeScale);
-        LuaAPI.PushNumber(L, UnityEngine.Time.timeScale);
-        return 1;
-    }
-
-    [MonoPInvokeCallback(typeof(LuaCFunction))]
-    public static int set_timeScale(IntPtr L)
-    {
-        if (LuaAPI.IsNumber(L, -1))
-        {
-            double arg0 = LuaAPI.ToNumber(L, -1);
-            UnityEngine.Time.timeScale = (float)arg0;
-        }
-        return 0;
-    }
-
-    [MonoPInvokeCallbackAttribute(typeof(LuaCFunction))]
-    public static int Find(IntPtr L)
-    {
-        if (CheckArgsCount(L, 1))
-        {
-            if (LuaAPI.IsString(L, 1))
-            {
-                string arg0 = LuaAPI.ToStr(L, 1);
-                UnityEngine.GameObject o = UnityEngine.GameObject.Find(arg0);
-                LuaAPI.PushObj(L, o);
-            }
-        }
-        return 1;
-    }
-
-    [MonoPInvokeCallbackAttribute(typeof(LuaCFunction))]
-    public static int get_name(IntPtr L)
+    public static int LuaGC(IntPtr L)
     {
         if (LuaAPI.IsObject(L, 1))
         {
-            UnityEngine.Object o = LuaAPI.ToObj<UnityEngine.Object>(L, 1);
-            LuaAPI.PushString(L, o.name);
-        }
-        return 1;
-    }
-
-    [MonoPInvokeCallbackAttribute(typeof(LuaCFunction))]
-    public static int set_name(IntPtr L)
-    {
-        if (LuaAPI.IsObject(L, 1) && LuaAPI.IsString(L, -1))
-        {
-            UnityEngine.Object o = LuaAPI.ToObj<UnityEngine.Object>(L, 1);
-            string arg0 = LuaAPI.ToStr(L, -1);
-            o.name = arg0;
+            int idx = LuaAPI.ToObject(L, 1);
+            ObjectTranslator.Instance.PopObj(idx);
         }
         return 0;
     }
@@ -108,7 +48,7 @@ public static class LuaCallback
     {
         if (LuaAPI.IsObject(L, 1))
         {
-            UnityEngine.GameObject go = LuaAPI.ToObj<GameObject>(L, 1);
+            UnityEngine.GameObject go = ToObject<GameObject>(L, 1);
             LuaAPI.PushString(L, go.tag);
         }
         return 1;
@@ -119,8 +59,8 @@ public static class LuaCallback
     {
         if (LuaAPI.IsObject(L, 1) && LuaAPI.IsString(L, -1))
         {
-            UnityEngine.GameObject go = LuaAPI.ToObj<GameObject>(L, 1);
-            string arg0 = LuaAPI.ToStr(L, -1);
+            UnityEngine.GameObject go = ToObject<GameObject>(L, 1);
+            string arg0 = ToString(L, -1);
             go.tag = arg0;
         }
         return 0;
@@ -131,8 +71,8 @@ public static class LuaCallback
     {
         if (LuaAPI.IsObject(L, 1))
         {
-            UnityEngine.GameObject go = LuaAPI.ToObj<GameObject>(L, 1);
-            LuaAPI.PushObj(L, go.transform);
+            UnityEngine.GameObject go = ToObject<GameObject>(L, 1);
+            PushObject(L, go.transform);
         }
         return 1;
     }
@@ -142,8 +82,8 @@ public static class LuaCallback
     {
         if (LuaAPI.IsObject(L, 1))
         {
-            UnityEngine.Transform trans = LuaAPI.ToObj<Transform>(L, 1);
-            PushVector3(L, trans.position);
+            UnityEngine.Transform trans = ToObject<Transform>(L, 1);
+            PushVector(L, trans.position);
         }
         return 1;
     }
@@ -153,7 +93,7 @@ public static class LuaCallback
     {
         if (LuaAPI.IsObject(L, 1))
         {
-            UnityEngine.Transform trans = LuaAPI.ToObj<Transform>(L, 1);
+            UnityEngine.Transform trans = ToObject<Transform>(L, 1);
             trans.position = ToVector3(L, -1);
         }
         return 0;
@@ -173,27 +113,21 @@ public static class LuaCallback
     public static void Register()
     {
         RegisterLuaFunc("print", Print);
-        BeginClass("Application", null);
-        RegisterFunc("OpenUrl", OpenUrl);
-        EndClass();
-        BeginClass("Time", null);
-        RegisterVar("timeScale", get_timeScale, set_timeScale);
-        EndClass();
-        BeginClass("Object", null);
-        RegisterVar("name", get_name, set_name);
-        EndClass();
-        BeginClass("Transform", "Object");
+        RegisterLuaFunc("gc", LuaGC);
+
+        ObjectWrap.Register();
+        GameObjectWrap.Register();
+        BeginClass(typeof(Transform), typeof(UnityEngine.Object));
         RegisterVar("position", get_position, set_position);
         EndClass();
-        BeginClass("GameObject", "Object");
-        RegisterFunc("Find", Find);
-        RegisterVar("tag", get_tag, set_tag);
-        RegisterVar("transform", get_transform, null);
-        EndClass();
+        //BeginClass(typeof(GameObject), typeof(UnityEngine.Object));
+        //RegisterVar("tag", get_tag, set_tag);
+        //RegisterVar("transform", get_transform, null);
+        //EndClass();
 
-        BeginClass("HotFix", null);
-        RegisterVar("addHotFix", null, set_addHotFix);
-        EndClass();
+        //BeginClass(typeof(HotFix), null);
+        //RegisterVar("addHotFix", null, set_addHotFix);
+        //EndClass();
     }
 
     public static void RegisterLuaFunc(string funcname, LuaCFunction funccallback)
@@ -201,9 +135,10 @@ public static class LuaCallback
         LuaAPI.RegisterLuaFunc(LuaEnv.L, funcname, Marshal.GetFunctionPointerForDelegate(funccallback));
     }
 
-    public static void BeginClass(string classname, string baseclassname)
+    public static void BeginClass(Type classType, Type baseclassType)
     {
-        LuaAPI.BeginClass(LuaEnv.L, classname, baseclassname);
+        int idx = ObjectTranslator.Instance.PushObj(classType);
+        LuaAPI.BeginClass(LuaEnv.L, classType.Name, baseclassType != null ? baseclassType.Name : null, idx);
     }
 
     public static void RegisterFunc(string funcname, LuaCFunction funccallback)
@@ -223,6 +158,36 @@ public static class LuaCallback
         LuaAPI.EndClass(LuaEnv.L);
     }
 
+    public static string ToString(IntPtr L, int i)
+    {
+        IntPtr str = LuaAPI.ToString(L, i);
+        return Marshal.PtrToStringAnsi(str);
+    }
+
+    public static T ToObject<T>(IntPtr L, int idx)
+    {
+        int index = LuaAPI.ToObject(L, idx);
+        return ObjectTranslator.Instance.Get<T>(index);
+    }
+
+    public static Type ToType(IntPtr L, int idx)
+    {
+        int index = (int)LuaAPI.ToNumber(L, idx);
+        return ObjectTranslator.Instance.Get<Type>(index);
+    }
+
+    public static void PushObject(IntPtr L, object t)
+    {
+        LuaAPI.PushObject(L, t.GetType().Name, ObjectTranslator.Instance.PushObj(t));
+    }
+
+    public static Vector2 ToVector2(IntPtr L, int idx)
+    {
+        Vector2 res;
+        LuaAPI.ToVector2(L, idx, out res.x, out res.y);
+        return res;
+    }
+
     public static Vector3 ToVector3(IntPtr L, int idx)
     {
         Vector3 res;
@@ -230,9 +195,86 @@ public static class LuaCallback
         return res;
     }
 
-    public static void PushVector3(IntPtr L, Vector3 v)
+    public static Vector4 ToVector4(IntPtr L, int idx)
+    {
+        Vector4 res;
+        LuaAPI.ToVector4(L, idx, out res.x, out res.y, out res.z, out res.w);
+        return res;
+    }
+
+    public static Quaternion ToQuaternion(IntPtr L, int idx)
+    {
+        Quaternion res;
+        LuaAPI.ToVector4(L, idx, out res.x, out res.y, out res.z, out res.w);
+        return res;
+    }
+
+    public static void PushVector(IntPtr L, Vector2 v)
+    {
+        LuaAPI.PushVector2(L, v.x, v.y);
+    }
+
+    public static void PushVector(IntPtr L, Vector3 v)
     {
         LuaAPI.PushVector3(L, v.x, v.y, v.z);
+    }
+
+    public static void PushVector(IntPtr L, Vector4 v)
+    {
+        LuaAPI.PushVector4(L, v.x, v.y, v.z, v.w);
+    }
+
+    public static void PushVector(IntPtr L, Quaternion q)
+    {
+        LuaAPI.PushVector4(L, q.x, q.y, q.z, q.w);
+    }
+
+    public static void PushArray(IntPtr L, int[] array)
+    {
+        LuaAPI.NewTable(L);
+        LuaAPI.PushNumber(L, -1);
+        LuaAPI.RawSetI(L, -2, 0);
+        for (int i = 0; i < array.Length; i++)
+        {
+            LuaAPI.PushNumber(L, array[i]);
+            LuaAPI.RawSetI(L, -2, i + 1);
+        }
+    }
+
+    public static void PushArray(IntPtr L, float[] array)
+    {
+        LuaAPI.NewTable(L);
+        LuaAPI.PushNumber(L, -1);
+        LuaAPI.RawSetI(L, -2, 0);
+        for (int i = 0; i < array.Length; i++)
+        {
+            LuaAPI.PushNumber(L, array[i]);
+            LuaAPI.RawSetI(L, -2, i + 1);
+        }
+    }
+
+    public static void PushArray(IntPtr L, string[] array)
+    {
+        LuaAPI.NewTable(L);
+        LuaAPI.PushNumber(L, -1);
+        LuaAPI.RawSetI(L, -2, 0);
+        for (int i = 0; i < array.Length; i++)
+        {
+            LuaAPI.PushString(L, array[i]);
+            LuaAPI.RawSetI(L, -2, i + 1);
+        }
+    }
+
+    public static void PushArray(IntPtr L, object[] array)
+    {
+        LuaAPI.NewTable(L);
+        LuaAPI.PushNumber(L, -1);
+        LuaAPI.RawSetI(L, -2, 0);
+        for (int i = 0; i < array.Length; i++)
+        {
+            PushObject(L, array[i]);
+            LuaAPI.RawSetI(L, -2, i + 1);
+        }
     }
 
     public static bool CheckArgsCount(IntPtr L, int count)

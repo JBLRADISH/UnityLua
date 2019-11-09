@@ -31,12 +31,6 @@ public class LuaAPI
     [DllImport("LuaDLL", CallingConvention = CallingConvention.Cdecl)]
     public static extern IntPtr ToString(IntPtr L, int i);
 
-    public static string ToStr(IntPtr L, int i)
-    {
-        IntPtr str = ToString(L, i);
-        return Marshal.PtrToStringAnsi(str);
-    }
-
     [DllImport("LuaDLL", CallingConvention = CallingConvention.Cdecl)]
     public static extern void PushString(IntPtr L, string s);
 
@@ -50,30 +44,40 @@ public class LuaAPI
     public static extern void PushNumber(IntPtr L, double d);
 
     [DllImport("LuaDLL", CallingConvention = CallingConvention.Cdecl)]
+    public static extern bool IsBool(IntPtr L, int i);
+
+    [DllImport("LuaDLL", CallingConvention = CallingConvention.Cdecl)]
+    public static extern bool ToBool(IntPtr L, int i);
+
+    [DllImport("LuaDLL", CallingConvention = CallingConvention.Cdecl)]
+    public static extern void PushBool(IntPtr L, bool b);
+
+    [DllImport("LuaDLL", CallingConvention = CallingConvention.Cdecl)]
     public static extern bool IsObject(IntPtr L, int idx);
 
     [DllImport("LuaDLL", CallingConvention = CallingConvention.Cdecl)]
     public static extern int ToObject(IntPtr L, int idx);
 
-    public static T ToObj<T>(IntPtr L, int idx) where T : UnityEngine.Object
-    {
-        int index = ToObject(L, idx);
-        return ObjectTranslator.Instance.Get<T>(index);
-    }
-
     [DllImport("LuaDLL", CallingConvention = CallingConvention.Cdecl)]
     public static extern void PushObject(IntPtr L, string classname, int obj);
 
-    public static void PushObj(IntPtr L, UnityEngine.Object t)
-    {
-        PushObject(L, t.GetType().Name, ObjectTranslator.Instance.PushObj(t));
-    }
+    [DllImport("LuaDLL", CallingConvention = CallingConvention.Cdecl)]
+    public static extern void ToVector2(IntPtr L, int idx, out float x, out float y);
+
+    [DllImport("LuaDLL", CallingConvention = CallingConvention.Cdecl)]
+    public static extern void PushVector2(IntPtr L, float x, float y);
 
     [DllImport("LuaDLL", CallingConvention = CallingConvention.Cdecl)]
     public static extern void ToVector3(IntPtr L, int idx, out float x, out float y, out float z);
 
     [DllImport("LuaDLL", CallingConvention = CallingConvention.Cdecl)]
     public static extern void PushVector3(IntPtr L, float x, float y, float z);
+
+    [DllImport("LuaDLL", CallingConvention = CallingConvention.Cdecl)]
+    public static extern void ToVector4(IntPtr L, int idx, out float x, out float y, out float z, out float w);
+
+    [DllImport("LuaDLL", CallingConvention = CallingConvention.Cdecl)]
+    public static extern void PushVector4(IntPtr L, float x, float y, float z, float w);
 
     [DllImport("LuaDLL", CallingConvention = CallingConvention.Cdecl)]
     public static extern bool IsLuaFunction(IntPtr L, int idx);
@@ -88,10 +92,16 @@ public class LuaAPI
     public static extern void CallLuaFunction(IntPtr L, int nargs, int nresults);
 
     [DllImport("LuaDLL", CallingConvention = CallingConvention.Cdecl)]
+    public static extern void RawSetI(IntPtr L, int idx, int i);
+
+    [DllImport("LuaDLL", CallingConvention = CallingConvention.Cdecl)]
+    public static extern void NewTable(IntPtr L);
+
+    [DllImport("LuaDLL", CallingConvention = CallingConvention.Cdecl)]
     public static extern void RegisterLuaFunc(IntPtr L, string funcname, IntPtr funcptr);
 
     [DllImport("LuaDLL", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void BeginClass(IntPtr L, string classname, string baseclassname);
+    public static extern void BeginClass(IntPtr L, string classname, string baseclassname, int idx);
 
     [DllImport("LuaDLL", CallingConvention = CallingConvention.Cdecl)]
     public static extern void RegisterFunc(IntPtr L, string funcname, IntPtr funcptr);

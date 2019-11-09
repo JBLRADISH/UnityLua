@@ -31,7 +31,7 @@ public class DelegateHelper<T1, T2, T3, T4>
         }
         else if (type == typeof(UnityEngine.Object))
         {
-            LuaAPI.PushObj(LuaEnv.L, (UnityEngine.Object)arg);
+            LuaCallback.PushObject(LuaEnv.L, (UnityEngine.Object)arg);
         }
     }
 
