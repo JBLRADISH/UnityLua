@@ -105,6 +105,11 @@ void PushObject(lua_State* L, const char* classname, int obj)
 	lua_pop(L, 1);
 }
 
+bool IsVector2(lua_State* L, int idx)
+{
+	return KVTableNumber(L, idx, "x") && KVTableNumber(L, idx, "y");
+}
+
 void ToVector2(lua_State* L, int idx, float* x, float* y)
 {
 	lua_getfield(L, idx, "x");
@@ -126,6 +131,11 @@ void PushVector2(lua_State* L, float x, float y)
 	lua_rawset(L, -3);
 }
 
+bool IsVector3(lua_State* L, int idx)
+{
+	return IsVector2(L, idx) && KVTableNumber(L, idx, "z");
+}
+
 void ToVector3(lua_State* L, int idx, float* x, float* y, float* z)
 {
 	ToVector2(L, idx, x, y);
@@ -140,6 +150,11 @@ void PushVector3(lua_State* L, float x, float y, float z)
 	lua_pushstring(L, "z");
 	lua_pushnumber(L, z);
 	lua_rawset(L, -3);
+}
+
+bool IsVector4(lua_State* L, int idx)
+{
+	return IsVector3(L, idx) && KVTableNumber(L, idx, "w");
 }
 
 void ToVector4(lua_State* L, int idx, float* x, float* y, float* z, float* w)
@@ -248,6 +263,28 @@ bool KVTable(lua_State* L, const char* key)
 		{
 			lua_pop(L, 1);
 			return true;
+		}
+	}
+	return false;
+}
+
+bool KVTableNumber(lua_State* L, int idx, const char* key)
+{
+	lua_pushnil(L);
+	while (0 != lua_next(L, idx))
+	{
+		if (lua_isnumber(L, -1))
+		{
+			lua_pop(L, 1);
+			if (strcmp(lua_tostring(L, -1), key) == 0)
+			{
+				lua_pop(L, 1);
+				return true;
+			}
+		}
+		else
+		{
+			lua_pop(L, 1);
 		}
 	}
 	return false;

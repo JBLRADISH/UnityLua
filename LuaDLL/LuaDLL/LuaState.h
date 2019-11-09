@@ -37,10 +37,13 @@ DllImport void PushBool(lua_State* L, bool b);
 DllImport bool IsObject(lua_State* L, int idx);
 DllImport int ToObject(lua_State* L, int idx);
 DllImport void PushObject(lua_State* L, const char* classname, int obj);
+DllImport bool IsVector2(lua_State* L, int idx);
 DllImport void ToVector2(lua_State* L, int idx, float* x, float* y);
 DllImport void PushVector2(lua_State* L, float x, float y);
+DllImport bool IsVector3(lua_State* L, int idx);
 DllImport void ToVector3(lua_State* L, int idx, float* x, float* y, float* z);
 DllImport void PushVector3(lua_State* L, float x, float y, float z);
+DllImport bool IsVector4(lua_State* L, int idx);
 DllImport void ToVector4(lua_State* L, int idx, float* x, float* y, float* z, float* w);
 DllImport void PushVector4(lua_State* L, float x, float y, float z, float w);
 DllImport bool IsLuaFunction(lua_State* L, int idx);
@@ -52,6 +55,9 @@ DllImport void RawSetI(lua_State* L, int idx, int i);
 DllImport void NewTable(lua_State* L);
 
 DllImport void RegisterLuaFunc(lua_State* L, const char* funcname, lua_CFunction funcptr);
+
+bool KVTable(lua_State* L, const char* key);
+bool KVTableNumber(lua_State* L, int idx, const char* key);
 
 int RegisterIndex(lua_State* L);
 int RegisterNewIndex(lua_State* L);

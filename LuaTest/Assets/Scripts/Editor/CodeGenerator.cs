@@ -126,67 +126,77 @@ public static class CodeGenerator
         sw.WriteLine("}");
     }
 
+    private static bool ContainsKey(Dictionary<Type, string> dict, Type t, out string s)
+    {
+        Type tmp = t;
+        while (t != null)
+        {
+            if (dict.ContainsKey(t))
+            {
+                s = dict[t];
+                return true;
+            }
+            t = t.BaseType;
+        }
+        s = null;
+        return false;
+    }
+
+    private static Dictionary<Type, string> typeCheckerDict = new Dictionary<Type, string>()
+    {
+        { typeof(int), "Number"},
+        { typeof(float), "Number"},
+        { typeof(Enum), "Number"},
+        { typeof(Type), "Number"},
+        { typeof(bool), "Bool"},
+        { typeof(string), "String"},
+        { typeof(Vector2), "Vector2"},
+        { typeof(Vector3), "Vector3"},
+        { typeof(Vector4), "Vector4"},
+        { typeof(Quaternion), "Vector4"},
+        { typeof(object), "Object"}
+    };
+
     private static string TypeChecker(Type t, int stackIdx)
     {
-        if (t == typeof(int) || t == typeof(float) || t == typeof(Type) || t.IsEnum)
+        string s;
+        if (ContainsKey(typeCheckerDict, t, out s))
         {
-            return string.Format(" && LuaAPI.IsNumber(L, {0})", stackIdx);
-        }
-        else if (t == typeof(bool))
-        {
-            return string.Format(" && LuaAPI.IsBool(L, {0})", stackIdx);
-        }
-        else if (t == typeof(string))
-        {
-            return string.Format(" && LuaAPI.IsString(L, {0})", stackIdx);
-        }
-        else if (t == typeof(Vector2) || t == typeof(Vector3) || t == typeof(Vector4) || t == typeof(Quaternion))
-        {
-            return null;
+            return string.Format(" && LuaAPI.Is{0}(L, {1})", s, stackIdx);
         }
         else
         {
-            return string.Format(" && LuaAPI.IsObject(L, {0})", stackIdx);
+            Debug.LogError("TypeChecker Error: " + t.FullName);
+            return null;
         }
     }
 
+    private static Dictionary<Type, string> typeConverterDict = new Dictionary<Type, string>()
+    {
+        { typeof(int), "Number"},
+        { typeof(float), "Number"},
+        { typeof(Enum), "Number"},
+        { typeof(Type), "Type"},
+        { typeof(bool), "Bool"},
+        { typeof(string), "String"},
+        { typeof(Vector2), "Vector2"},
+        { typeof(Vector3), "Vector3"},
+        { typeof(Vector4), "Vector4"},
+        { typeof(Quaternion), "Quaternion"},
+        { typeof(object), "Object"}
+    };
+
     private static string TypeConverter(Type t, int argIdx, int stackIdx)
     {
-        if (t == typeof(int) || t == typeof(float) || t.IsEnum)
+        string s;
+        if (ContainsKey(typeConverterDict, t, out s))
         {
-            return string.Format("{0} arg{1} = ({0})LuaAPI.ToNumber(L, {2});", t.FullName, argIdx, stackIdx);
-        }
-        else if (t == typeof(Type))
-        {
-            return string.Format("{0} arg{1} = LuaCallback.ToType(L, {2});", t.FullName, argIdx, stackIdx);
-        }
-        else if (t == typeof(bool))
-        {
-            return string.Format("{0} arg{1} = LuaAPI.ToBool(L, {2});", t.FullName, argIdx, stackIdx);
-        }
-        else if (t == typeof(string))
-        {
-            return string.Format("{0} arg{1} = LuaCallback.ToString(L, {2});", t.FullName, argIdx, stackIdx);
-        }
-        else if (t == typeof(Vector2))
-        {
-            return string.Format("{0} arg{1} = LuaCallback.ToVector2(L, {2});", t.FullName, argIdx, stackIdx);
-        }
-        else if (t == typeof(Vector3))
-        {
-            return string.Format("{0} arg{1} = LuaCallback.ToVector3(L, {2});", t.FullName, argIdx, stackIdx);
-        }
-        else if (t == typeof(Vector4))
-        {
-            return string.Format("{0} arg{1} = LuaCallback.ToVector4(L, {2});", t.FullName, argIdx, stackIdx);
-        }
-        else if (t == typeof(Quaternion))
-        {
-            return string.Format("{0} arg{1} = LuaCallback.ToQuaternion(L, {2});", t.FullName, argIdx, stackIdx);
+            return string.Format("{0} arg{1} = ({0})LuaCallback.To{2}(L, {3});", GetTypeString(t), argIdx, s, stackIdx);
         }
         else
         {
-            return string.Format("{0} arg{1} = LuaCallback.ToObject<{0}>(L, {2});", GetTypeString(t), argIdx, stackIdx);
+            Debug.LogError("TypeConverter Error: " + t.FullName);
+            return null;
         }
     }
 
@@ -216,6 +226,21 @@ public static class CodeGenerator
         }
     }
 
+    private static Dictionary<Type, string> pushConverterDict = new Dictionary<Type, string>()
+    {
+        { typeof(int),"Number"},
+        { typeof(float),"Number"},
+        { typeof(Enum), "Number"},
+        { typeof(bool),"Bool"},
+        { typeof(string),"String"},
+        { typeof(Vector2),"Vector"},
+        { typeof(Vector3),"Vector"},
+        { typeof(Vector4),"Vector"},
+        { typeof(Quaternion),"Vector"},
+        { typeof(Array),"Array"},
+        { typeof(object), "Object"}
+    };
+
     private static string PushConverter(MethodInfo funcInfo)
     {
         if (GetNResults(funcInfo) == 0)
@@ -224,29 +249,15 @@ public static class CodeGenerator
         }
         else
         {
-            if (funcInfo.ReturnType == typeof(int) || funcInfo.ReturnType == typeof(float) || funcInfo.ReturnType.IsEnum)
+            string s;
+            if (ContainsKey(pushConverterDict, funcInfo.ReturnType, out s))
             {
-                return "LuaAPI.PushNumber(L, (double)res);";
-            }
-            else if (funcInfo.ReturnType == typeof(bool))
-            {
-                return "LuaAPI.PushBool(L, res);";
-            }
-            else if (funcInfo.ReturnType == typeof(string))
-            {
-                return "LuaAPI.PushString(L, res);";
-            }
-            else if (funcInfo.ReturnType == typeof(Vector2) || funcInfo.ReturnType == typeof(Vector3) || funcInfo.ReturnType == typeof(Vector4) || funcInfo.ReturnType == typeof(Quaternion))
-            {
-                return "LuaCallback.PushVector(L, res);";
-            }
-            else if (funcInfo.ReturnType.IsArray)
-            {
-                return "LuaCallback.PushArray(L, res);";
+                return string.Format("LuaCallback.Push{0}(L, {1}res); ", s, funcInfo.ReturnType.IsEnum ? "(double)" : "");
             }
             else
             {
-                return "LuaCallback.PushObject(L, res);";
+                Debug.LogError("PushConverter Error: " + funcInfo.ReturnType.FullName);
+                return null;
             }
         }
     }

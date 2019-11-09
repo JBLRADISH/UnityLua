@@ -14,5 +14,3 @@ end
 
 local light = GameObject.Find("Directional Light")
 GameObject.Instantiate(light, Vector3.New(10,10,10), Quaternion.New(0,0,0,0))
-
-

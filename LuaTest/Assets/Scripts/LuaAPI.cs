@@ -62,16 +62,25 @@ public class LuaAPI
     public static extern void PushObject(IntPtr L, string classname, int obj);
 
     [DllImport("LuaDLL", CallingConvention = CallingConvention.Cdecl)]
+    public static extern bool IsVector2(IntPtr L, int idx);
+
+    [DllImport("LuaDLL", CallingConvention = CallingConvention.Cdecl)]
     public static extern void ToVector2(IntPtr L, int idx, out float x, out float y);
 
     [DllImport("LuaDLL", CallingConvention = CallingConvention.Cdecl)]
     public static extern void PushVector2(IntPtr L, float x, float y);
 
     [DllImport("LuaDLL", CallingConvention = CallingConvention.Cdecl)]
+    public static extern bool IsVector3(IntPtr L, int idx);
+
+    [DllImport("LuaDLL", CallingConvention = CallingConvention.Cdecl)]
     public static extern void ToVector3(IntPtr L, int idx, out float x, out float y, out float z);
 
     [DllImport("LuaDLL", CallingConvention = CallingConvention.Cdecl)]
     public static extern void PushVector3(IntPtr L, float x, float y, float z);
+
+    [DllImport("LuaDLL", CallingConvention = CallingConvention.Cdecl)]
+    public static extern bool IsVector4(IntPtr L, int idx);
 
     [DllImport("LuaDLL", CallingConvention = CallingConvention.Cdecl)]
     public static extern void ToVector4(IntPtr L, int idx, out float x, out float y, out float z, out float w);

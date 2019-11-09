@@ -24,16 +24,16 @@ public class ObjectTranslator
         return objectPool.Count - 1;
     }
 
-    public T Get<T>(int index)
+    public object Get(int index)
     {
         try
         {
-            return (T)objectPool[index];
+            return objectPool[index];
         }
         catch (Exception e)
         {
             Debug.LogError(e.ToString());
-            return default(T);
+            return null;
         }
     }
 

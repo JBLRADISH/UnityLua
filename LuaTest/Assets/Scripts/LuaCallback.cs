@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using AOT;
 using UnityEngine;
 
- public static class LuaCallback
+public static class LuaCallback
 {
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -48,7 +48,7 @@ using UnityEngine;
     {
         if (LuaAPI.IsObject(L, 1))
         {
-            UnityEngine.GameObject go = ToObject<GameObject>(L, 1);
+            UnityEngine.GameObject go = (GameObject)ToObject(L, 1);
             LuaAPI.PushString(L, go.tag);
         }
         return 1;
@@ -59,7 +59,7 @@ using UnityEngine;
     {
         if (LuaAPI.IsObject(L, 1) && LuaAPI.IsString(L, -1))
         {
-            UnityEngine.GameObject go = ToObject<GameObject>(L, 1);
+            UnityEngine.GameObject go = (GameObject)ToObject(L, 1);
             string arg0 = ToString(L, -1);
             go.tag = arg0;
         }
@@ -71,7 +71,7 @@ using UnityEngine;
     {
         if (LuaAPI.IsObject(L, 1))
         {
-            UnityEngine.GameObject go = ToObject<GameObject>(L, 1);
+            UnityEngine.GameObject go = (GameObject)ToObject(L, 1);
             PushObject(L, go.transform);
         }
         return 1;
@@ -82,7 +82,7 @@ using UnityEngine;
     {
         if (LuaAPI.IsObject(L, 1))
         {
-            UnityEngine.Transform trans = ToObject<Transform>(L, 1);
+            UnityEngine.Transform trans = (Transform)ToObject(L, 1);
             PushVector(L, trans.position);
         }
         return 1;
@@ -93,7 +93,7 @@ using UnityEngine;
     {
         if (LuaAPI.IsObject(L, 1))
         {
-            UnityEngine.Transform trans = ToObject<Transform>(L, 1);
+            UnityEngine.Transform trans = (Transform)ToObject(L, 1);
             trans.position = ToVector3(L, -1);
         }
         return 0;
@@ -158,22 +158,47 @@ using UnityEngine;
         LuaAPI.EndClass(LuaEnv.L);
     }
 
+    public static double ToNumber(IntPtr L, int i)
+    {
+        return LuaAPI.ToNumber(L, i);
+    }
+
+    public static void PushNumber(IntPtr L, double d)
+    {
+        LuaAPI.PushNumber(L, d);
+    }
+
+    public static bool ToBool(IntPtr L, int i)
+    {
+        return LuaAPI.ToBool(L, i);
+    }
+
+    public static void PushBool(IntPtr L, bool b)
+    {
+        LuaAPI.PushBool(L, b);
+    }
+
     public static string ToString(IntPtr L, int i)
     {
         IntPtr str = LuaAPI.ToString(L, i);
         return Marshal.PtrToStringAnsi(str);
     }
 
-    public static T ToObject<T>(IntPtr L, int idx)
+    public static void PushString(IntPtr L, string s)
+    {
+        LuaAPI.PushString(L, s);
+    }
+
+    public static object ToObject(IntPtr L, int idx)
     {
         int index = LuaAPI.ToObject(L, idx);
-        return ObjectTranslator.Instance.Get<T>(index);
+        return ObjectTranslator.Instance.Get(index);
     }
 
     public static Type ToType(IntPtr L, int idx)
     {
         int index = (int)LuaAPI.ToNumber(L, idx);
-        return ObjectTranslator.Instance.Get<Type>(index);
+        return (Type)ObjectTranslator.Instance.Get(index);
     }
 
     public static void PushObject(IntPtr L, object t)
