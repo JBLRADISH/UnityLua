@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using AOT;
 using UnityEngine;
 
-public static class LuaCallback
+public class LuaCallback
 {
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -44,62 +44,6 @@ public static class LuaCallback
     }
 
     [MonoPInvokeCallbackAttribute(typeof(LuaCFunction))]
-    public static int get_tag(IntPtr L)
-    {
-        if (LuaAPI.IsObject(L, 1))
-        {
-            UnityEngine.GameObject go = (GameObject)ToObject(L, 1);
-            LuaAPI.PushString(L, go.tag);
-        }
-        return 1;
-    }
-
-    [MonoPInvokeCallbackAttribute(typeof(LuaCFunction))]
-    public static int set_tag(IntPtr L)
-    {
-        if (LuaAPI.IsObject(L, 1) && LuaAPI.IsString(L, -1))
-        {
-            UnityEngine.GameObject go = (GameObject)ToObject(L, 1);
-            string arg0 = ToString(L, -1);
-            go.tag = arg0;
-        }
-        return 0;
-    }
-
-    [MonoPInvokeCallbackAttribute(typeof(LuaCFunction))]
-    static int get_transform(IntPtr L)
-    {
-        if (LuaAPI.IsObject(L, 1))
-        {
-            UnityEngine.GameObject go = (GameObject)ToObject(L, 1);
-            PushObject(L, go.transform);
-        }
-        return 1;
-    }
-
-    [MonoPInvokeCallbackAttribute(typeof(LuaCFunction))]
-    static int get_position(IntPtr L)
-    {
-        if (LuaAPI.IsObject(L, 1))
-        {
-            UnityEngine.Transform trans = (Transform)ToObject(L, 1);
-            PushVector(L, trans.position);
-        }
-        return 1;
-    }
-
-    [MonoPInvokeCallbackAttribute(typeof(LuaCFunction))]
-    static int set_position(IntPtr L)
-    {
-        if (LuaAPI.IsObject(L, 1))
-        {
-            UnityEngine.Transform trans = (Transform)ToObject(L, 1);
-            trans.position = ToVector3(L, -1);
-        }
-        return 0;
-    }
-
-    [MonoPInvokeCallbackAttribute(typeof(LuaCFunction))]
     static int set_addHotFix(IntPtr L)
     {
         if (LuaAPI.IsLuaFunction(L, -1))
@@ -115,19 +59,7 @@ public static class LuaCallback
         RegisterLuaFunc("print", Print);
         RegisterLuaFunc("gc", LuaGC);
 
-        ObjectWrap.Register();
-        GameObjectWrap.Register();
-        BeginClass(typeof(Transform), typeof(UnityEngine.Object));
-        RegisterVar("position", get_position, set_position);
-        EndClass();
-        //BeginClass(typeof(GameObject), typeof(UnityEngine.Object));
-        //RegisterVar("tag", get_tag, set_tag);
-        //RegisterVar("transform", get_transform, null);
-        //EndClass();
-
-        //BeginClass(typeof(HotFix), null);
-        //RegisterVar("addHotFix", null, set_addHotFix);
-        //EndClass();
+        LuaBinder.Register();
     }
 
     public static void RegisterLuaFunc(string funcname, LuaCFunction funccallback)

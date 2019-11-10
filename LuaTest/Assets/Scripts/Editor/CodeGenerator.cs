@@ -7,6 +7,39 @@ using System.Reflection;
 using System;
 using System.Linq;
 
+public class VarInfo
+{
+    public string Name;
+    public bool IsGetStatic;
+    public bool IsSetStatic;
+    public Type VarType;
+    public Type DeclaringType;
+
+    public VarInfo(FieldInfo fieldInfo)
+    {
+        Name = fieldInfo.Name;
+        IsGetStatic = fieldInfo.IsStatic;
+        IsSetStatic = fieldInfo.IsStatic;
+        VarType = fieldInfo.FieldType;
+        DeclaringType = fieldInfo.DeclaringType;
+    }
+
+    public VarInfo(PropertyInfo propertyInfo)
+    {
+        Name = propertyInfo.Name;
+        if (propertyInfo.GetGetMethod() != null)
+        {
+            IsGetStatic = propertyInfo.GetGetMethod().IsStatic;
+        }
+        if (propertyInfo.GetSetMethod() != null)
+        {
+            IsSetStatic = propertyInfo.GetSetMethod().IsStatic;
+        }
+        VarType = propertyInfo.PropertyType;
+        DeclaringType = propertyInfo.DeclaringType;
+    }
+}
+
 public static class CodeGenerator
 {
     [MenuItem("Tools/WrapGenerator")]
@@ -18,28 +51,50 @@ public static class CodeGenerator
             Directory.Delete(directoryPath, true);
         }
         Directory.CreateDirectory(directoryPath);
+        List<Type> list = new List<Type>();
         for (int i = 0; i < WrapSettings.wrapClasses.Count; i++)
         {
-            WrapClassGenerator(WrapSettings.wrapClasses[i]);
+            WrapClassGenerator(WrapSettings.wrapClasses[i], list);
         }
+        FileStream fs = new FileStream(Application.dataPath + "/Scripts/LuaBinder.cs", FileMode.Create);
+        StreamWriter sw = new StreamWriter(fs);
+        sw.WriteLine("public class LuaBinder");
+        sw.WriteLine("{");
+        sw.WriteLine("public static void Register()");
+        sw.WriteLine("{");
+        for (int i = 0; i < list.Count; i++)
+        {
+            sw.WriteLine(string.Format("{0}Wrap.Register();", list[i].Name));
+        }
+        sw.WriteLine("}");
+        sw.WriteLine("}");
+        sw.Close();
+        fs.Close();
+        FileUtils.FileFormatter(Application.dataPath + "/Scripts/LuaBinder.cs");
         AssetDatabase.Refresh();
     }
 
-    private static void WrapClassGenerator(Type t)
+    private static void WrapClassGenerator(Type t, List<Type> list)
     {
         if (t != typeof(UnityEngine.Object))
         {
-            WrapClassGenerator(t.BaseType);
+            WrapClassGenerator(t.BaseType, list);
         }
+        if (list.Contains(t))
+        {
+            return;
+        }
+        list.Add(t);
         string filePath = Application.dataPath + "/Scripts/Wrap/" + t.Name + "Wrap.cs";
         FileStream fs = new FileStream(filePath, FileMode.Create);
         StreamWriter sw = new StreamWriter(fs);
-        sw.WriteLine("public static class " + t.Name + "Wrap");
+        sw.WriteLine("public class " + t.Name + "Wrap");
         sw.WriteLine("{");
         WrapRegisterGenerator(t, sw);
         sw.WriteLine("}");
         sw.Close();
         fs.Close();
+        FileUtils.FileFormatter(filePath);
     }
 
     private static void WrapRegisterGenerator(Type t, StreamWriter sw)
@@ -65,30 +120,57 @@ public static class CodeGenerator
         {
             sw.WriteLine(string.Format("LuaCallback.RegisterFunc(\"{0}\", {0});", item));
         }
-        //FieldInfo[] fieldInfos = t.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance);
-        //for (int i = 0; i < fieldInfos.Length; i++)
-        //{
-        //    FieldInfo fieldInfo = fieldInfos[i];
-        //    if (!CheckObsolete(fieldInfo))
-        //    {
-        //        sw.WriteLine(string.Format("LuaCallback.RegisterVar(\"{0}\", get_{0}, {1});", fieldInfo.Name, fieldInfo.IsLiteral ? "null" : "set_" + fieldInfo.Name));
-        //    }
-        //}
-        //PropertyInfo[] propertyInfos = t.GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance);
-        //for (int i = 0; i < propertyInfos.Length; i++)
-        //{
-        //    PropertyInfo propertyInfo = propertyInfos[i];
-        //    if (!CheckObsolete(propertyInfo))
-        //    {
-        //        sw.WriteLine(string.Format("LuaCallback.RegisterVar(\"{0}\", {1}, {2});", propertyInfo.Name, propertyInfo.CanRead ? "get_" + propertyInfo.Name : "null", propertyInfo.CanWrite ? "set_" + propertyInfo.Name : "null"));
-        //    }
-        //}
+        FieldInfo[] fieldInfos = t.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance);
+        List<VarInfo> varGetInfos = new List<VarInfo>();
+        List<VarInfo> varSetInfos = new List<VarInfo>();
+        for (int i = 0; i < fieldInfos.Length; i++)
+        {
+            FieldInfo fieldInfo = fieldInfos[i];
+            if (!CheckObsolete(fieldInfo))
+            {
+                sw.WriteLine(string.Format("LuaCallback.RegisterVar(\"{0}\", get_{0}, {1});", fieldInfo.Name, fieldInfo.IsLiteral ? "null" : "set_" + fieldInfo.Name));
+                VarInfo varInfo = new VarInfo(fieldInfo);
+                varGetInfos.Add(varInfo);
+                if (!fieldInfo.IsLiteral)
+                {
+                    varSetInfos.Add(varInfo);
+                }
+            }
+        }
+        PropertyInfo[] propertyInfos = t.GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance);
+        for (int i = 0; i < propertyInfos.Length; i++)
+        {
+            PropertyInfo propertyInfo = propertyInfos[i];
+            if (!CheckObsolete(propertyInfo))
+            {
+                sw.WriteLine(string.Format("LuaCallback.RegisterVar(\"{0}\", {1}, {2});", propertyInfo.Name, propertyInfo.CanRead ? "get_" + propertyInfo.Name : "null", propertyInfo.CanWrite ? "set_" + propertyInfo.Name : "null"));
+                VarInfo varInfo = new VarInfo(propertyInfo);
+                if (propertyInfo.CanRead)
+                {
+                    varGetInfos.Add(varInfo);
+                }
+                if (propertyInfo.CanWrite)
+                {
+                    varSetInfos.Add(varInfo);
+                }
+            }
+        }
         sw.WriteLine("LuaCallback.EndClass();");
         sw.WriteLine("}");
 
         foreach (var kv in funcInfos)
         {
             WrapFuncGenerator(sw, kv.Value);
+        }
+
+        foreach (var item in varGetInfos)
+        {
+            WrapVarGetGenerator(sw, item);
+        }
+
+        foreach (var item in varSetInfos)
+        {
+            WrapVarSetGenerator(sw, item);
         }
     }
 
@@ -126,17 +208,58 @@ public static class CodeGenerator
         sw.WriteLine("}");
     }
 
+    private static void WrapVarGetGenerator(StreamWriter sw, VarInfo varInfo)
+    {
+        sw.WriteLine("");
+        sw.WriteLine("[AOT.MonoPInvokeCallback(typeof(LuaCallback.LuaCFunction))]");
+        sw.WriteLine(string.Format("public static int get_{0}(System.IntPtr L)", varInfo.Name));
+        sw.WriteLine("{");
+        string condition = varInfo.IsGetStatic ? null : string.Format("if (true{0})", TypeChecker(typeof(object), 1));
+        sw.WriteLine(condition);
+        sw.WriteLine("{");
+        sw.WriteLine(varInfo.IsGetStatic ? null : TypeConverter(varInfo.DeclaringType, 0, 1));
+        sw.WriteLine(CallConverter(varInfo, true));
+        sw.WriteLine(PushConverter(varInfo));
+        sw.WriteLine(string.Format("return 1;"));
+        sw.WriteLine("}");
+        sw.WriteLine("return 0;");
+        sw.WriteLine("}");
+    }
+
+    private static void WrapVarSetGenerator(StreamWriter sw, VarInfo varInfo)
+    {
+        sw.WriteLine("");
+        sw.WriteLine("[AOT.MonoPInvokeCallback(typeof(LuaCallback.LuaCFunction))]");
+        sw.WriteLine(string.Format("public static int set_{0}(System.IntPtr L)", varInfo.Name));
+        sw.WriteLine("{");
+        string condition = string.Format("if (true{0}{1})", varInfo.IsSetStatic ? null : TypeChecker(typeof(object), 1), TypeChecker(varInfo.VarType, 3));
+        sw.WriteLine(condition);
+        sw.WriteLine("{");
+        sw.WriteLine(varInfo.IsSetStatic ? null : TypeConverter(varInfo.DeclaringType, 0, 1));
+        sw.WriteLine(TypeConverter(varInfo.VarType, varInfo.IsSetStatic ? 0 : 1, 3));
+        sw.WriteLine(CallConverter(varInfo, false));
+        sw.WriteLine(string.Format("return 0;"));
+        sw.WriteLine("}");
+        sw.WriteLine("return 0;");
+        sw.WriteLine("}");
+    }
+
     private static bool ContainsKey(Dictionary<Type, string> dict, Type t, out string s)
     {
         Type tmp = t;
-        while (t != null)
+        while (tmp != null)
         {
-            if (dict.ContainsKey(t))
+            if (tmp.IsInterface)
             {
-                s = dict[t];
+                s = dict[typeof(object)];
                 return true;
             }
-            t = t.BaseType;
+            if (dict.ContainsKey(tmp))
+            {
+                s = dict[tmp];
+                return true;
+            }
+            tmp = tmp.BaseType;
         }
         s = null;
         return false;
@@ -226,6 +349,32 @@ public static class CodeGenerator
         }
     }
 
+    private static string CallConverter(VarInfo varInfo, bool isGet)
+    {
+        if (isGet)
+        {
+            if (varInfo.IsGetStatic)
+            {
+                return string.Format("{0} res = {1}.{2};", GetTypeString(varInfo.VarType), varInfo.DeclaringType.FullName, varInfo.Name);
+            }
+            else
+            {
+                return string.Format("{0} res = arg0.{1};", GetTypeString(varInfo.VarType), varInfo.Name);
+            }
+        }
+        else
+        {
+            if (varInfo.IsSetStatic)
+            {
+                return string.Format("{0}.{1} = arg0;", varInfo.DeclaringType.FullName, varInfo.Name);
+            }
+            else
+            {
+                return string.Format("arg0.{0} = arg1;", varInfo.Name);
+            }
+        }
+    }
+
     private static Dictionary<Type, string> pushConverterDict = new Dictionary<Type, string>()
     {
         { typeof(int),"Number"},
@@ -259,6 +408,20 @@ public static class CodeGenerator
                 Debug.LogError("PushConverter Error: " + funcInfo.ReturnType.FullName);
                 return null;
             }
+        }
+    }
+
+    private static string PushConverter(VarInfo varInfo)
+    {
+        string s;
+        if (ContainsKey(pushConverterDict, varInfo.VarType, out s))
+        {
+            return string.Format("LuaCallback.Push{0}(L, {1}res); ", s, varInfo.VarType.IsEnum ? "(double)" : "");
+        }
+        else
+        {
+            Debug.LogError("PushConverter Error: " + varInfo.VarType.FullName);
+            return null;
         }
     }
 
