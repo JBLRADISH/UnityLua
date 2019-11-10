@@ -49,7 +49,7 @@ public class LuaCallback
         if (LuaAPI.IsLuaFunction(L, -1))
         {
             int reference = LuaAPI.ToLuaFunction(L);
-            HotFix.addHotFix = new DelegateHelper<UnityEngine.Object, int, int, int>(reference);
+            HotFix.addHotFix = new DelegateHelper(reference);
         }
         return 0;
     }
@@ -58,6 +58,10 @@ public class LuaCallback
     {
         RegisterLuaFunc("print", Print);
         RegisterLuaFunc("gc", LuaGC);
+
+        BeginClass(typeof(HotFix), null);
+        RegisterVar("addHotFix", null, set_addHotFix);
+        EndClass();
 
         LuaBinder.Register();
     }
