@@ -1,4 +1,3 @@
-HotFix.addHotFix = function (self, a, b)
-	print(self.name)
+HotFix.addHotFix = function (a, b)
 	return (a + b) * 2;
 end
