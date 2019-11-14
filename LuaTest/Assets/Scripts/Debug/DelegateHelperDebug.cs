@@ -3,12 +3,12 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class DelegateHelper
+public class DelegateHelperDebug
 {
 
     int reference;
 
-    public DelegateHelper(int reference)
+    public DelegateHelperDebug(int reference)
     {
         this.reference = reference;
     }

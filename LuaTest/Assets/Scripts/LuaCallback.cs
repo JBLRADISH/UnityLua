@@ -44,12 +44,12 @@ public class LuaCallback
     }
 
     [MonoPInvokeCallbackAttribute(typeof(LuaCFunction))]
-    static int set_addHotFix(IntPtr L)
+    static int set_addHotFixDebug(IntPtr L)
     {
         if (LuaAPI.IsLuaFunction(L, -1))
         {
             int reference = LuaAPI.ToLuaFunction(L);
-            HotFix.addHotFix = new DelegateHelper(reference);
+            HotFixDebug.addHotFix = new DelegateHelperDebug(reference);
         }
         return 0;
     }
@@ -59,11 +59,11 @@ public class LuaCallback
         RegisterLuaFunc("print", Print);
         RegisterLuaFunc("gc", LuaGC);
 
-        BeginClass(typeof(HotFix), null);
-        RegisterVar("addHotFix", null, set_addHotFix);
-        EndClass();
-
         LuaBinder.Register();
+
+        BeginClass(typeof(HotFixDebug), null);
+        RegisterVar("addHotFixDebug", null, set_addHotFixDebug);
+        EndClass();
     }
 
     public static void RegisterLuaFunc(string funcname, LuaCFunction funccallback)
