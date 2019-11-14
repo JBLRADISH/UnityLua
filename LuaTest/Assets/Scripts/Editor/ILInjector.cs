@@ -1,15 +1,11 @@
 ﻿using AOT;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
-using Mono.Collections.Generic;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
 using UnityEditor;
-using UnityEditor.Callbacks;
 using UnityEngine;
 
 public static class ILInjector
@@ -26,6 +22,7 @@ public static class ILInjector
             Debug.LogError(string.Format("Inject Failed: {0}", AssemblyPath));
             return;
         }
+
         List<MethodDefinition> methodDefinitions = new List<MethodDefinition>();
         foreach (TypeDefinition typeDefinition in assemblyDefinition.MainModule.Types)
         {
@@ -37,6 +34,7 @@ public static class ILInjector
                 }
             }
         }
+
         TypeDefinition delegateHelper = DelegateHelperGenerator(assemblyDefinition.MainModule, methodDefinitions);
         foreach (MethodDefinition methodDefinition in methodDefinitions)
         {
@@ -61,6 +59,8 @@ public static class ILInjector
         Register_IL(luaCallback, methodDefinitions);
 
         assemblyDefinition.Write(AssemblyPath, new WriterParameters { WriteSymbols = true });
+
+        Debug.Log("IL Injector Success!");
     }
 
     private static void Register_IL(TypeDefinition luaCallback, List<MethodDefinition> hotfixs)
@@ -84,6 +84,7 @@ public static class ILInjector
                 ilProcessor.InsertBefore(first, ilProcessor.Create(OpCodes.Newobj, luaCallback.Module.ImportReference(typeof(LuaCallback.LuaCFunction).GetConstructor(new Type[] { typeof(object), typeof(IntPtr) }))));
                 ilProcessor.InsertBefore(first, ilProcessor.Create(OpCodes.Call, luaCallback.Methods.First(method => method.Name == "RegisterVar")));
             }
+
             ilProcessor.InsertBefore(first, ilProcessor.Create(OpCodes.Call, luaCallback.Methods.First(method => method.Name == "EndClass")));
         }
     }
@@ -97,14 +98,18 @@ public static class ILInjector
             {
                 res[hotfixs[i].DeclaringType] = new List<MethodDefinition>();
             }
+
             res[hotfixs[i].DeclaringType].Add(hotfixs[i]);
         }
+
         return res;
     }
 
     private static void LuaCallback_IL(MethodDefinition luaCallback, MethodDefinition hotfix, TypeDefinition delegateHelper)
     {
         luaCallback.Body.InitLocals = true;
+        luaCallback.Body.Variables.Add(new VariableDefinition(luaCallback.Module.ImportReference(typeof(int))));
+        luaCallback.Body.Variables.Add(new VariableDefinition(luaCallback.Module.ImportReference(typeof(int))));
         ILProcessor ilProcessor = luaCallback.Body.GetILProcessor();
         Instruction ldc_i4_0 = ilProcessor.Create(OpCodes.Ldc_I4_0);
         Instruction ldloc_1 = ilProcessor.Create(OpCodes.Ldloc_1);
@@ -157,6 +162,7 @@ public static class ILInjector
                 return true;
             }
         }
+
         return false;
     }
 
@@ -179,9 +185,11 @@ public static class ILInjector
             {
                 invoke.Parameters.Add(res[i].Parameters[j]);
             }
+
             delegateHelper.Methods.Add(invoke);
             DelegateHelper_Invoke_IL(invoke);
         }
+
         return delegateHelper;
     }
 
@@ -202,6 +210,7 @@ public static class ILInjector
     private static void DelegateHelper_Invoke_IL(MethodDefinition invoke)
     {
         invoke.Body.InitLocals = true;
+        invoke.Body.Variables.Add(new VariableDefinition(invoke.Module.ImportReference(typeof(int))));
         ILProcessor ilProcessor = invoke.Body.GetILProcessor();
         Instruction getL = ilProcessor.Create(OpCodes.Call, invoke.Module.ImportReference(typeof(LuaEnv).GetMethod("get_L")));
         Instruction ldloc_0 = ilProcessor.Create(OpCodes.Ldloc_0);
@@ -250,6 +259,7 @@ public static class ILInjector
         {
             res += "_" + methodDefinition.Parameters[i].ParameterType.Name;
         }
+
         res += "_" + methodDefinition.ReturnType.Name;
         return res;
     }
@@ -271,6 +281,7 @@ public static class ILInjector
                 return;
             }
         }
+
         res.Add(methodDefinition);
     }
 
@@ -280,10 +291,12 @@ public static class ILInjector
         {
             return false;
         }
+
         if (methodDefinition1.Parameters.Count != methodDefinition2.Parameters.Count)
         {
             return false;
         }
+
         for (int i = 0; i < methodDefinition1.Parameters.Count; i++)
         {
             if (methodDefinition1.Parameters[i].ParameterType != methodDefinition2.Parameters[i].ParameterType)
@@ -291,6 +304,7 @@ public static class ILInjector
                 return false;
             }
         }
+
         return true;
     }
 }
