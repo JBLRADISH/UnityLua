@@ -6,5 +6,8 @@ public class LuaBinder
 		GameObjectWrap.Register();
 		ComponentWrap.Register();
 		TransformWrap.Register();
+		BehaviourWrap.Register();
+		MonoBehaviourWrap.Register();
+        HotFixWrap.Register();
 	}
 }

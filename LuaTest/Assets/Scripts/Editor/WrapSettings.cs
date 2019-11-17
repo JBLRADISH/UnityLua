@@ -9,5 +9,7 @@ public class WrapSettings {
     {
         typeof(GameObject),
         typeof(Transform),
+
+        typeof(HotFix),
     };
 }

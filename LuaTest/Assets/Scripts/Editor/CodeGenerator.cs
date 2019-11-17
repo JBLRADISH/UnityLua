@@ -42,6 +42,9 @@ public class VarInfo
 
 public static class CodeGenerator
 {
+    private static List<MethodInfo> delegateHelpers;
+    private static List<Type> wrapClasses;
+
     [MenuItem("Tools/WrapGenerator")]
     public static void WrapGenerator()
     {
@@ -51,40 +54,181 @@ public static class CodeGenerator
             Directory.Delete(directoryPath, true);
         }
         Directory.CreateDirectory(directoryPath);
-        List<Type> list = new List<Type>();
+        wrapClasses = new List<Type>();
+        delegateHelpers = new List<MethodInfo>();
         for (int i = 0; i < WrapSettings.wrapClasses.Count; i++)
         {
-            WrapClassGenerator(WrapSettings.wrapClasses[i], list);
+            WrapClassGenerator(WrapSettings.wrapClasses[i]);
         }
+        BinderGenerator();
+        DelegateHelperGenerator();
+        AssetDatabase.Refresh();
+    }
+
+    private static void DelegateHelperGenerator()
+    {
+        List<MethodInfo> res = new List<MethodInfo>();
+        AddMethodInfo(res, delegateHelpers);
+        FileStream fs = new FileStream(Application.dataPath + "/Scripts/DelegateHelper.cs", FileMode.Create);
+        StreamWriter sw = new StreamWriter(fs);
+        sw.WriteLine("public class DelegateHelper");
+        sw.WriteLine("{");
+        sw.WriteLine("int reference;");
+        sw.WriteLine("System.IntPtr L;");
+        sw.WriteLine("public DelegateHelper(int reference)");
+        sw.WriteLine("{");
+        sw.WriteLine("this.reference = reference;");
+        sw.WriteLine("L = LuaEnv.L;");
+        sw.WriteLine("}");
+        for (int i = 0; i < res.Count; i++)
+        {
+            InvokeGenerator(res[i], sw);
+        }
+        sw.WriteLine("}");
+        sw.Close();
+        fs.Close();
+        FileUtils.FileFormatter(Application.dataPath + "/Scripts/DelegateHelper.cs");
+    }
+
+    private static void InvokeGenerator(MethodInfo funcInfo, StreamWriter sw)
+    {
+        sw.WriteLine(string.Format("public {0} {1}({2})", GetTypeString(funcInfo.ReturnType), GetInvokeName(funcInfo), GetArgString(funcInfo)));
+        sw.WriteLine("{");
+        sw.WriteLine("LuaAPI.PushLuaFunction(L, reference);");
+        Type[] types = GetParameters(funcInfo);
+        for (int i = 0; i < types.Length; i++)
+        {
+            sw.WriteLine(PushConverter(types[i], "arg" + i));
+        }
+        sw.WriteLine(string.Format("LuaAPI.CallLuaFunction(L, {0}, {1});", types.Length, GetNResults(funcInfo)));
+        if (GetNResults(funcInfo) > 0)
+        {
+            sw.WriteLine(TypeConverter(funcInfo.ReturnType, types.Length, -1));
+            sw.WriteLine(string.Format("return arg{0};", types.Length));
+        }
+        sw.WriteLine("}");
+    }
+
+    private static string GetInvokeName(MethodInfo funcInfo)
+    {
+        string res = "Invoke";
+        for (int i = 0; i < GetParameters(funcInfo).Length; i++)
+        {
+            res += "_" + GetParameters(funcInfo)[i].Name;
+        }
+        res += "_" + funcInfo.ReturnType.Name;
+        return res;
+    }
+
+    private static string GetArgString(MethodInfo funcInfo)
+    {
+        Type[] types = GetParameters(funcInfo);
+        if (types.Length == 0)
+        {
+            return null;
+        }
+        string res = "";
+        for (int i = 0; i < types.Length; i++)
+        {
+            res += GetTypeString(types[i]) + " arg" + i + (i == types.Length - 1 ? "" : ", ");
+        }
+        return res;
+    }
+
+    private static void AddMethodInfo(List<MethodInfo> res, List<MethodInfo> methodInfos)
+    {
+        for (int i = 0; i < methodInfos.Count; i++)
+        {
+            AddMethodInfo(res, methodInfos[i]);
+        }
+    }
+
+    private static void AddMethodInfo(List<MethodInfo> res, MethodInfo methodInfo)
+    {
+        for (int i = 0; i < res.Count; i++)
+        {
+            if (CheckEqual(res[i], methodInfo))
+            {
+                return;
+            }
+        }
+        res.Add(methodInfo);
+    }
+
+    private static bool CheckEqual(MethodInfo methodInfo1, MethodInfo methodInfo2)
+    {
+        if (!methodInfo1.ReturnType.Equals(methodInfo2.ReturnType))
+        {
+            return false;
+        }
+        if (GetParameters(methodInfo1).Length != GetParameters(methodInfo2).Length)
+        {
+            return false;
+        }
+        for (int i = 0; i < GetParameters(methodInfo1).Length; i++)
+        {
+            if (!GetParameters(methodInfo1)[i].Equals(GetParameters(methodInfo2)[i]))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static Type[] GetParameters(MethodInfo methodInfo)
+    {
+        ParameterInfo[] parameterInfos = methodInfo.GetParameters();
+        if (methodInfo.IsStatic)
+        {
+            Type[] res = new Type[parameterInfos.Length];
+            for (int i = 0; i < parameterInfos.Length; i++)
+            {
+                res[i] = parameterInfos[i].ParameterType;
+            }
+            return res;
+        }
+        else
+        {
+            Type[] res = new Type[parameterInfos.Length + 1];
+            res[0] = methodInfo.DeclaringType;
+            for (int i = 0; i < parameterInfos.Length; i++)
+            {
+                res[i + 1] = parameterInfos[i].ParameterType;
+            }
+            return res;
+        }
+    }
+
+    private static void BinderGenerator()
+    {
         FileStream fs = new FileStream(Application.dataPath + "/Scripts/LuaBinder.cs", FileMode.Create);
         StreamWriter sw = new StreamWriter(fs);
         sw.WriteLine("public class LuaBinder");
         sw.WriteLine("{");
         sw.WriteLine("public static void Register()");
         sw.WriteLine("{");
-        for (int i = 0; i < list.Count; i++)
+        for (int i = 0; i < wrapClasses.Count; i++)
         {
-            sw.WriteLine(string.Format("{0}Wrap.Register();", list[i].Name));
+            sw.WriteLine(string.Format("{0}Wrap.Register();", wrapClasses[i].Name));
         }
         sw.WriteLine("}");
         sw.WriteLine("}");
         sw.Close();
         fs.Close();
         FileUtils.FileFormatter(Application.dataPath + "/Scripts/LuaBinder.cs");
-        AssetDatabase.Refresh();
     }
 
-    private static void WrapClassGenerator(Type t, List<Type> list)
+    private static void WrapClassGenerator(Type t)
     {
         if (t != typeof(UnityEngine.Object))
         {
-            WrapClassGenerator(t.BaseType, list);
+            WrapClassGenerator(t.BaseType);
         }
-        if (list.Contains(t))
+        if (wrapClasses.Contains(t))
         {
             return;
         }
-        list.Add(t);
+        wrapClasses.Add(t);
         string filePath = Application.dataPath + "/Scripts/Wrap/" + t.Name + "Wrap.cs";
         FileStream fs = new FileStream(filePath, FileMode.Create);
         StreamWriter sw = new StreamWriter(fs);
@@ -116,10 +260,21 @@ public static class CodeGenerator
                 funcInfos[methodInfo.Name].Add(methodInfo);
             }
         }
-        foreach (string item in funcInfos.Keys)
+        List<MethodInfo> tmp = new List<MethodInfo>();
+        foreach (var item in funcInfos)
         {
-            sw.WriteLine(string.Format("LuaCallback.RegisterFunc(\"{0}\", {0});", item));
+            sw.WriteLine(string.Format("LuaCallback.RegisterFunc(\"{0}\", {0});", item.Key));
+            foreach (var method in item.Value)
+            {
+                if (ContainsAttribute<HotFixAttribute>(method))
+                {
+                    sw.WriteLine(string.Format("LuaCallback.RegisterVar(\"{0}HotFix\", null, set_{0}HotFix);", method.Name));
+                    tmp.Add(method);
+                    break;
+                }
+            }
         }
+        delegateHelpers.AddRange(tmp);
         FieldInfo[] fieldInfos = t.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance);
         List<VarInfo> varGetInfos = new List<VarInfo>();
         List<VarInfo> varSetInfos = new List<VarInfo>();
@@ -157,6 +312,16 @@ public static class CodeGenerator
         }
         sw.WriteLine("LuaCallback.EndClass();");
         sw.WriteLine("}");
+
+        foreach (var hotfix in tmp)
+        {
+            sw.WriteLine("");
+            sw.WriteLine("[AOT.MonoPInvokeCallback(typeof(LuaCallback.LuaCFunction))]");
+            sw.WriteLine(string.Format("public static int set_{0}HotFix(System.IntPtr L)", hotfix.Name));
+            sw.WriteLine("{");
+            sw.WriteLine("return 0;");
+            sw.WriteLine("}");
+        }
 
         foreach (var kv in funcInfos)
         {
@@ -206,6 +371,19 @@ public static class CodeGenerator
         }
         sw.WriteLine("return 0;");
         sw.WriteLine("}");
+    }
+
+    private static bool ContainsAttribute<T>(MethodInfo methodInfo) where T : Attribute
+    {
+        object[] attributes = methodInfo.GetCustomAttributes(typeof(T), false);
+        if (attributes.Length > 0)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 
     private static void WrapVarGetGenerator(StreamWriter sw, VarInfo varInfo)
@@ -398,16 +576,21 @@ public static class CodeGenerator
         }
         else
         {
-            string s;
-            if (ContainsKey(pushConverterDict, funcInfo.ReturnType, out s))
-            {
-                return string.Format("LuaCallback.Push{0}(L, {1}res); ", s, funcInfo.ReturnType.IsEnum ? "(double)" : "");
-            }
-            else
-            {
-                Debug.LogError("PushConverter Error: " + funcInfo.ReturnType.FullName);
-                return null;
-            }
+            return PushConverter(funcInfo.ReturnType, "res");
+        }
+    }
+
+    private static string PushConverter(Type type, string name)
+    {
+        string s;
+        if (ContainsKey(pushConverterDict, type, out s))
+        {
+            return string.Format("LuaCallback.Push{0}(L, {1}{2}); ", s, type.IsEnum ? "(double)" : "", name);
+        }
+        else
+        {
+            Debug.LogError("PushConverter Error: " + type.FullName);
+            return null;
         }
     }
 
