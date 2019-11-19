@@ -176,7 +176,6 @@ public class MonoBehaviourWrap
 		int nargs = LuaAPI.GetTop(L);
 		if (nargs == 1 && LuaAPI.IsObject(L, 1))
 		{
-			
 			System.Object arg0 = (System.Object)LuaCallback.ToObject(L, 1);
 			UnityEngine.MonoBehaviour.print(arg0);
 			

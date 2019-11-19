@@ -8,6 +8,6 @@ public class LuaBinder
 		TransformWrap.Register();
 		BehaviourWrap.Register();
 		MonoBehaviourWrap.Register();
-        HotFixWrap.Register();
+		HotFixWrap.Register();
 	}
 }

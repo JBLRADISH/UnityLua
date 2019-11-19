@@ -5,7 +5,7 @@ public class HotFixWrap
 		LuaCallback.BeginClass(typeof(HotFix), typeof(UnityEngine.MonoBehaviour));
 		LuaCallback.RegisterFunc("Add", Add);
 		LuaCallback.RegisterVar("AddHotFix", null, set_AddHotFix);
-        LuaCallback.EndClass();
+		LuaCallback.EndClass();
 	}
 	
 	[AOT.MonoPInvokeCallback(typeof(LuaCallback.LuaCFunction))]

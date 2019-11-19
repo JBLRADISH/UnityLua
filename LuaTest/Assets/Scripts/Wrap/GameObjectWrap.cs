@@ -37,7 +37,6 @@ public class GameObjectWrap
 		int nargs = LuaAPI.GetTop(L);
 		if (nargs == 1 && LuaAPI.IsNumber(L, 1))
 		{
-			
 			UnityEngine.PrimitiveType arg0 = (UnityEngine.PrimitiveType)LuaCallback.ToNumber(L, 1);
 			UnityEngine.GameObject res = UnityEngine.GameObject.CreatePrimitive(arg0);
 			LuaCallback.PushObject(L, res); 
@@ -186,7 +185,6 @@ public class GameObjectWrap
 		int nargs = LuaAPI.GetTop(L);
 		if (nargs == 1 && LuaAPI.IsString(L, 1))
 		{
-			
 			System.String arg0 = (System.String)LuaCallback.ToString(L, 1);
 			UnityEngine.GameObject res = UnityEngine.GameObject.FindWithTag(arg0);
 			LuaCallback.PushObject(L, res); 
@@ -375,7 +373,6 @@ public class GameObjectWrap
 		int nargs = LuaAPI.GetTop(L);
 		if (nargs == 1 && LuaAPI.IsString(L, 1))
 		{
-			
 			System.String arg0 = (System.String)LuaCallback.ToString(L, 1);
 			UnityEngine.GameObject res = UnityEngine.GameObject.FindGameObjectWithTag(arg0);
 			LuaCallback.PushObject(L, res); 
@@ -390,7 +387,6 @@ public class GameObjectWrap
 		int nargs = LuaAPI.GetTop(L);
 		if (nargs == 1 && LuaAPI.IsString(L, 1))
 		{
-			
 			System.String arg0 = (System.String)LuaCallback.ToString(L, 1);
 			UnityEngine.GameObject[] res = UnityEngine.GameObject.FindGameObjectsWithTag(arg0);
 			LuaCallback.PushArray(L, res); 
@@ -405,7 +401,6 @@ public class GameObjectWrap
 		int nargs = LuaAPI.GetTop(L);
 		if (nargs == 1 && LuaAPI.IsString(L, 1))
 		{
-			
 			System.String arg0 = (System.String)LuaCallback.ToString(L, 1);
 			UnityEngine.GameObject res = UnityEngine.GameObject.Find(arg0);
 			LuaCallback.PushObject(L, res); 

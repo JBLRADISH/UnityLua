@@ -349,20 +349,18 @@ public static class CodeGenerator
         for (int i = 0; i < funcInfos.Count; i++)
         {
             MethodInfo funcInfo = funcInfos[i];
-            ParameterInfo[] parameterInfos = funcInfo.GetParameters();
-            string condition = string.Format("if (nargs == {0}", funcInfo.IsStatic ? parameterInfos.Length : parameterInfos.Length + 1);
-            condition += funcInfo.IsStatic ? "" : TypeChecker(funcInfo.DeclaringType, 1);
-            for (int j = 0; j < parameterInfos.Length; j++)
+            Type[] types = GetParameters(funcInfo);
+            string condition = string.Format("if (nargs == {0}", types.Length);
+            for (int j = 0; j < types.Length; j++)
             {
-                condition += TypeChecker(parameterInfos[j].ParameterType, j + (funcInfo.IsStatic ? 1 : 2));
+                condition += TypeChecker(types[j], j + 1);
             }
             condition += ")";
             sw.WriteLine(condition);
             sw.WriteLine("{");
-            sw.WriteLine(funcInfo.IsStatic ? null : TypeConverter(funcInfo.DeclaringType, 0, 1));
-            for (int j = 0; j < parameterInfos.Length; j++)
+            for (int j = 0; j < types.Length; j++)
             {
-                sw.WriteLine(TypeConverter(parameterInfos[j].ParameterType, j + (funcInfo.IsStatic ? 0 : 1), j + (funcInfo.IsStatic ? 1 : 2)));
+                sw.WriteLine(TypeConverter(types[j], j, j + 1));
             }
             sw.WriteLine(CallConverter(funcInfo));
             sw.WriteLine(PushConverter(funcInfo));

@@ -67,7 +67,6 @@ public class ObjectWrap
 		int nargs = LuaAPI.GetTop(L);
 		if (nargs == 3 && LuaAPI.IsObject(L, 1) && LuaAPI.IsVector3(L, 2) && LuaAPI.IsVector4(L, 3))
 		{
-			
 			UnityEngine.Object arg0 = (UnityEngine.Object)LuaCallback.ToObject(L, 1);
 			UnityEngine.Vector3 arg1 = (UnityEngine.Vector3)LuaCallback.ToVector3(L, 2);
 			UnityEngine.Quaternion arg2 = (UnityEngine.Quaternion)LuaCallback.ToQuaternion(L, 3);
@@ -77,7 +76,6 @@ public class ObjectWrap
 		}
 		if (nargs == 4 && LuaAPI.IsObject(L, 1) && LuaAPI.IsVector3(L, 2) && LuaAPI.IsVector4(L, 3) && LuaAPI.IsObject(L, 4))
 		{
-			
 			UnityEngine.Object arg0 = (UnityEngine.Object)LuaCallback.ToObject(L, 1);
 			UnityEngine.Vector3 arg1 = (UnityEngine.Vector3)LuaCallback.ToVector3(L, 2);
 			UnityEngine.Quaternion arg2 = (UnityEngine.Quaternion)LuaCallback.ToQuaternion(L, 3);
@@ -88,7 +86,6 @@ public class ObjectWrap
 		}
 		if (nargs == 1 && LuaAPI.IsObject(L, 1))
 		{
-			
 			UnityEngine.Object arg0 = (UnityEngine.Object)LuaCallback.ToObject(L, 1);
 			UnityEngine.Object res = UnityEngine.Object.Instantiate(arg0);
 			LuaCallback.PushObject(L, res); 
@@ -96,7 +93,6 @@ public class ObjectWrap
 		}
 		if (nargs == 2 && LuaAPI.IsObject(L, 1) && LuaAPI.IsObject(L, 2))
 		{
-			
 			UnityEngine.Object arg0 = (UnityEngine.Object)LuaCallback.ToObject(L, 1);
 			UnityEngine.Transform arg1 = (UnityEngine.Transform)LuaCallback.ToObject(L, 2);
 			UnityEngine.Object res = UnityEngine.Object.Instantiate(arg0, arg1);
@@ -105,7 +101,6 @@ public class ObjectWrap
 		}
 		if (nargs == 3 && LuaAPI.IsObject(L, 1) && LuaAPI.IsObject(L, 2) && LuaAPI.IsBool(L, 3))
 		{
-			
 			UnityEngine.Object arg0 = (UnityEngine.Object)LuaCallback.ToObject(L, 1);
 			UnityEngine.Transform arg1 = (UnityEngine.Transform)LuaCallback.ToObject(L, 2);
 			System.Boolean arg2 = (System.Boolean)LuaCallback.ToBool(L, 3);
@@ -122,7 +117,6 @@ public class ObjectWrap
 		int nargs = LuaAPI.GetTop(L);
 		if (nargs == 2 && LuaAPI.IsObject(L, 1) && LuaAPI.IsNumber(L, 2))
 		{
-			
 			UnityEngine.Object arg0 = (UnityEngine.Object)LuaCallback.ToObject(L, 1);
 			System.Single arg1 = (System.Single)LuaCallback.ToNumber(L, 2);
 			UnityEngine.Object.Destroy(arg0, arg1);
@@ -131,7 +125,6 @@ public class ObjectWrap
 		}
 		if (nargs == 1 && LuaAPI.IsObject(L, 1))
 		{
-			
 			UnityEngine.Object arg0 = (UnityEngine.Object)LuaCallback.ToObject(L, 1);
 			UnityEngine.Object.Destroy(arg0);
 			
@@ -146,7 +139,6 @@ public class ObjectWrap
 		int nargs = LuaAPI.GetTop(L);
 		if (nargs == 2 && LuaAPI.IsObject(L, 1) && LuaAPI.IsBool(L, 2))
 		{
-			
 			UnityEngine.Object arg0 = (UnityEngine.Object)LuaCallback.ToObject(L, 1);
 			System.Boolean arg1 = (System.Boolean)LuaCallback.ToBool(L, 2);
 			UnityEngine.Object.DestroyImmediate(arg0, arg1);
@@ -155,7 +147,6 @@ public class ObjectWrap
 		}
 		if (nargs == 1 && LuaAPI.IsObject(L, 1))
 		{
-			
 			UnityEngine.Object arg0 = (UnityEngine.Object)LuaCallback.ToObject(L, 1);
 			UnityEngine.Object.DestroyImmediate(arg0);
 			
@@ -170,7 +161,6 @@ public class ObjectWrap
 		int nargs = LuaAPI.GetTop(L);
 		if (nargs == 1 && LuaAPI.IsNumber(L, 1))
 		{
-			
 			System.Type arg0 = (System.Type)LuaCallback.ToType(L, 1);
 			UnityEngine.Object[] res = UnityEngine.Object.FindObjectsOfType(arg0);
 			LuaCallback.PushArray(L, res); 
@@ -185,7 +175,6 @@ public class ObjectWrap
 		int nargs = LuaAPI.GetTop(L);
 		if (nargs == 1 && LuaAPI.IsObject(L, 1))
 		{
-			
 			UnityEngine.Object arg0 = (UnityEngine.Object)LuaCallback.ToObject(L, 1);
 			UnityEngine.Object.DontDestroyOnLoad(arg0);
 			
@@ -200,7 +189,6 @@ public class ObjectWrap
 		int nargs = LuaAPI.GetTop(L);
 		if (nargs == 1 && LuaAPI.IsNumber(L, 1))
 		{
-			
 			System.Type arg0 = (System.Type)LuaCallback.ToType(L, 1);
 			UnityEngine.Object res = UnityEngine.Object.FindObjectOfType(arg0);
 			LuaCallback.PushObject(L, res); 
